@@ -149,4 +149,106 @@ DELIMITER ;
 
 CALL GenerarFacturaEvento();
 
+DROP PROCEDURE IF EXISTS registrar_usuario;
 
+DELIMITER //
+
+CREATE PROCEDURE registrar_usuario(
+    IN p_nombre_usuario VARCHAR(100),
+    IN p_email VARCHAR(100),
+    IN p_contrasena VARCHAR(255),
+    IN p_role_id INT
+)
+BEGIN
+    -- Declarar variables de control
+    DECLARE v_usuario_existe INT DEFAULT 0;
+    DECLARE v_email_existe INT DEFAULT 0;
+    DECLARE v_role_existe INT DEFAULT 0;
+    DECLARE v_role_name VARCHAR(50);
+
+    -- Verificar la existencia del role
+    SELECT COUNT(*) INTO v_role_existe
+    FROM Role
+    WHERE role_id = p_role_id;
+
+    -- Validar que el role exista
+    IF v_role_existe = 0 THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'El role especificado no existe.';
+    END IF;
+
+    -- Obtener el nombre del role
+    SELECT role_name INTO v_role_name
+    FROM Role
+    WHERE role_id = p_role_id;
+
+    -- Validar que el email no esté ya registrado
+    SELECT COUNT(*) INTO v_email_existe
+    FROM Usuario
+    WHERE email = p_email;
+
+    IF v_email_existe > 0 THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'El email ya está registrado.';
+    END IF;
+
+    -- Validar que el nombre de usuario no esté ya registrado
+    SELECT COUNT(*) INTO v_usuario_existe
+    FROM Usuario
+    WHERE nombre_usuario = p_nombre_usuario;
+
+    IF v_usuario_existe > 0 THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'El nombre de usuario ya existe.';
+    END IF;
+
+    -- Insertar un nuevo usuario
+    INSERT INTO Usuario (nombre_usuario, email, contraseña, role_id)
+    VALUES (p_nombre_usuario, p_email, p_contrasena, p_role_id);
+
+    -- Devolver el ID del usuario recién insertado
+    SELECT LAST_INSERT_ID() AS usuario_id;
+END //
+
+DELIMITER ;
+
+-- Registrar un usuario con rol de vendedora
+CALL registrar_usuario('CarlaGomez', 'carla.gomez@ejemplo.com', 'contraseña_hasheada', 2);
+
+DROP PROCEDURE IF EXISTS login_usuario;
+
+DELIMITER //
+
+CREATE PROCEDURE login_usuario(
+    IN p_email VARCHAR(100),
+    IN p_contrasena VARCHAR(255)
+)
+BEGIN
+    DECLARE v_usuario_id INT;
+    DECLARE v_role_id INT;
+    DECLARE v_nombre_usuario VARCHAR(100);
+
+    -- Verificar si el correo electrónico y la contraseña coinciden
+    SELECT usuario_id, role_id, nombre_usuario
+    INTO v_usuario_id, v_role_id, v_nombre_usuario
+    FROM Usuario
+    WHERE email = p_email AND contraseña = p_contrasena;
+
+    -- Manejar el caso de usuario no encontrado
+    IF v_usuario_id IS NULL THEN
+        SELECT 0 AS usuario_id, 
+               NULL AS role_id, 
+               'Credenciales inválidas' AS mensaje;
+    ELSE
+        -- Devolver información del usuario
+        SELECT 
+            v_usuario_id AS usuario_id, 
+            v_role_id AS role_id, 
+            v_nombre_usuario AS nombre_usuario,
+            'Inicio de sesión exitoso' AS mensaje;
+    END IF;
+END //
+
+DELIMITER ;
+
+CALL login_usuario('carla.gomez@ejemplo.com', 'contraseña_hasheada');
