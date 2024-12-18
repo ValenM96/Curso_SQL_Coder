@@ -86,6 +86,21 @@ CREATE TABLE Historial_Evento (
     FOREIGN KEY (evento_id) REFERENCES Evento(evento_id)
 );
 
+-- Crear tabla de roles
+CREATE TABLE Role (
+    role_id INT AUTO_INCREMENT PRIMARY KEY,
+    role_name VARCHAR(50) NOT NULL UNIQUE
+);
+
+-- Crear tabla de usuarios
+CREATE TABLE Usuario (
+    usuario_id INT AUTO_INCREMENT PRIMARY KEY,
+    nombre_usuario VARCHAR(100) NOT NULL,
+    email VARCHAR(100) NOT NULL UNIQUE,
+    contraseña VARCHAR(255) NOT NULL,
+    role_id INT,
+    FOREIGN KEY (role_id) REFERENCES Role(role_id)
+);
 
 -- Listar todos los eventos en un salón específico
 SELECT nombre_evento, fecha 
