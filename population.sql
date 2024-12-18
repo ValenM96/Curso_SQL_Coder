@@ -57,6 +57,8 @@ INSERT INTO Servicio_Adicional (nombre, descripcion, costo) VALUES
 ('Personal de protocolo', 'Anfitriones y coordinadores', 35000.00),
 ('Kit de bienvenida', 'Obsequios personalizados para invitados', 10000.00);
 
+INSERT INTO Role (role_name) VALUES ('admin');
+INSERT INTO Role (role_name) VALUES ('vendedora');
 
 INSERT INTO Catering (evento_id, vendedora_id, descripcion, costo) VALUES 
 ((SELECT MAX(evento_id) FROM Evento), 
