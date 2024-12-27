@@ -17,3 +17,12 @@ SELECT e.evento_id, e.nombre_evento, c.nombre AS cliente, s.nombre AS salon, e.f
 FROM Evento e
 JOIN Cliente c ON e.cliente_id = c.cliente_id
 JOIN Salon s ON e.salon_id = s.salon_id;
+
+CREATE VIEW IngresosPorVendedora AS
+SELECT 
+    v.nombre AS vendedora, 
+    SUM(f.monto_total) AS ingreso_total
+FROM Vendedora v
+JOIN Evento e ON v.vendedora_id = e.vendedora_id
+JOIN Factura f ON e.evento_id = f.evento_id
+GROUP BY v.nombre;

@@ -149,9 +149,9 @@ DELIMITER ;
 
 CALL GenerarFacturaEvento();
 
-DROP PROCEDURE IF EXISTS registrar_usuario;
-
 DELIMITER //
+
+DROP PROCEDURE IF EXISTS registrar_usuario;
 
 CREATE PROCEDURE registrar_usuario(
     IN p_nombre_usuario VARCHAR(100),
@@ -164,23 +164,16 @@ BEGIN
     DECLARE v_usuario_existe INT DEFAULT 0;
     DECLARE v_email_existe INT DEFAULT 0;
     DECLARE v_role_existe INT DEFAULT 0;
-    DECLARE v_role_name VARCHAR(50);
 
-    -- Verificar la existencia del role
+    -- Validar que el rol exista
     SELECT COUNT(*) INTO v_role_existe
     FROM Role
     WHERE role_id = p_role_id;
 
-    -- Validar que el role exista
     IF v_role_existe = 0 THEN
         SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'El role especificado no existe.';
+        SET MESSAGE_TEXT = 'El rol especificado no existe.';
     END IF;
-
-    -- Obtener el nombre del role
-    SELECT role_name INTO v_role_name
-    FROM Role
-    WHERE role_id = p_role_id;
 
     -- Validar que el email no esté ya registrado
     SELECT COUNT(*) INTO v_email_existe
@@ -212,6 +205,7 @@ END //
 
 DELIMITER ;
 
+
 -- Registrar un usuario con rol de vendedora
 CALL registrar_usuario('CarlaGomez', 'carla.gomez@ejemplo.com', 'contraseña_hasheada', 2);
 
@@ -237,8 +231,8 @@ BEGIN
     -- Manejar el caso de usuario no encontrado
     IF v_usuario_id IS NULL THEN
         SELECT 0 AS usuario_id, 
-               NULL AS role_id, 
-               'Credenciales inválidas' AS mensaje;
+            NULL AS role_id, 
+            'Credenciales inválidas' AS mensaje;
     ELSE
         -- Devolver información del usuario
         SELECT 
@@ -252,3 +246,59 @@ END //
 DELIMITER ;
 
 CALL login_usuario('carla.gomez@ejemplo.com', 'contraseña_hasheada');
+
+DELIMITER //
+
+DROP PROCEDURE IF EXISTS asignar_permiso_rol;
+
+CREATE PROCEDURE asignar_permiso_rol(
+    IN p_rol_id INT,
+    IN p_permiso_id INT
+)
+BEGIN
+    -- Validar que el rol exista
+    IF NOT EXISTS (SELECT 1 FROM Role WHERE role_id = p_rol_id) THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'El rol especificado no existe.';
+    END IF;
+
+    -- Validar que el permiso exista
+    IF NOT EXISTS (SELECT 1 FROM Permiso WHERE permiso_id = p_permiso_id) THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'El permiso especificado no existe.';
+    END IF;
+
+    -- Insertar la relación rol-permiso
+    INSERT IGNORE INTO RolPermiso (rol_id, permiso_id)
+    VALUES (p_rol_id, p_permiso_id);
+END //
+
+DELIMITER ;
+
+DELIMITER //
+
+CREATE PROCEDURE verificar_permiso_usuario(
+    IN p_usuario_id INT,
+    IN p_permiso_nombre VARCHAR(100)
+)
+BEGIN
+    DECLARE v_permiso_existe INT;
+
+    SELECT COUNT(*)
+    INTO v_permiso_existe
+    FROM Usuario u
+    JOIN Role r ON u.role_id = r.role_id
+    JOIN RolPermiso rp ON r.role_id = rp.rol_id
+    JOIN Permiso p ON rp.permiso_id = p.permiso_id
+    WHERE u.usuario_id = p_usuario_id
+    AND p.permiso_nombre = p_permiso_nombre;
+
+    IF v_permiso_existe = 0 THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Acceso denegado. El usuario no tiene el permiso requerido.';
+    END IF;
+
+    SELECT 'Acceso permitido' AS mensaje;
+END //
+
+DELIMITER ;

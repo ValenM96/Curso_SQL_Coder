@@ -9,3 +9,13 @@ BEGIN
 END //
 
 DELIMITER ;
+
+DELIMITER //
+CREATE TRIGGER after_factura_insert
+AFTER INSERT ON Factura
+FOR EACH ROW
+BEGIN
+    INSERT INTO LogFacturas (factura_id, fecha, monto_total)
+    VALUES (NEW.factura_id, NEW.fecha_emision, NEW.monto_total);
+END //
+DELIMITER ;

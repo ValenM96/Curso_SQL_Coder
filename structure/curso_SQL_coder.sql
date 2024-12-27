@@ -102,6 +102,20 @@ CREATE TABLE Usuario (
     FOREIGN KEY (role_id) REFERENCES Role(role_id)
 );
 
+CREATE TABLE Permiso (
+    permiso_id INT AUTO_INCREMENT PRIMARY KEY,
+    permiso_nombre VARCHAR(100) NOT NULL UNIQUE,
+    descripcion VARCHAR(255)
+);
+
+CREATE TABLE RolPermiso (
+    rol_id INT,
+    permiso_id INT,
+    PRIMARY KEY (rol_id, permiso_id),
+    FOREIGN KEY (rol_id) REFERENCES Role(role_id),
+    FOREIGN KEY (permiso_id) REFERENCES Permiso(permiso_id)
+);
+
 -- Listar todos los eventos en un salón específico
 SELECT nombre_evento, fecha 
 FROM Evento 
